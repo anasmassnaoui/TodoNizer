@@ -90,12 +90,12 @@ export const tasks = onRequest(async (request, response) => {
         if (tasks.length !== 0) {
             message += `Here is your tasks list:\n`;
             for (let i = 0; i < tasks.length; i++)
-                message += `${i} - ${tasks[i][1]}\n`
+                message += `${i}: ${tasks[i][1]}\n`
         }
         if (extraTasks.length !== 0) {
             message += `Here is your extra tasks list:\n`;
             for (let i = 0; i < extraTasks.length; i++)
-                message += `${tasks.length + i} - ${extraTasks[i][1]}\n`
+                message += `${tasks.length + i}: ${extraTasks[i][1]}\n`
         }
         response.send(message);
     }

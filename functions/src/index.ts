@@ -15,6 +15,7 @@ const Tasks = {
       priority,
       userId,
       completed: false,
+      creationDate: new Date(),
     });
   },
   getTasks: async (userId: string, priority?: number):
@@ -22,6 +23,8 @@ const Tasks = {
     const db = getFirestore();
     let tasksRef = db
       .collection(TODO_COLLECTION)
+      .orderBy("creationDate", "asc")
+      .orderBy("priority", "asc")
       .where("userId", "==", userId)
       .where("completed", "==", false);
     if (typeof priority === "number") {
@@ -35,7 +38,9 @@ const Tasks = {
     const db = getFirestore();
     const tasks = await db
       .collection(TODO_COLLECTION)
+      .orderBy("creationDate", "asc")
       .where("userId", "==", userId)
+      .where("completed", "==", false)
       .get();
     const task = tasks.docs[taskNumber];
     return task ? [task.data().task, task.id] : undefined;
@@ -53,6 +58,13 @@ const Tasks = {
       .collection(TODO_COLLECTION)
       .doc(taskId)
       .set({priority});
+  },
+  deleteTask: async (taskId: string): Promise<void> => {
+    const db = getFirestore();
+    await db
+      .collection(TODO_COLLECTION)
+      .doc(taskId)
+      .delete();
   },
 };
 
@@ -92,15 +104,18 @@ export const tasks = onRequest(async (request, response) => {
   } else {
     let message = "";
     if (tasks.length !== 0) {
-      message += "Here is your tasks list:\n";
+      message += "*Here is your tasks list:*\n\n";
       for (let i = 0; i < tasks.length; i++) {
-        message += `${i}: ${tasks[i][1]}\n`;
+        message += `${i + 1}: ${tasks[i][1]}\n`;
       }
     }
     if (extraTasks.length !== 0) {
-      message += "Here is your extra tasks list:\n";
+      if (tasks.length !== 0) {
+        message += "\n";
+      }
+      message += "*Here is your extra tasks list:*\n";
       for (let i = 0; i < extraTasks.length; i++) {
-        message += `${tasks.length + i}: ${extraTasks[i][1]}\n`;
+        message += `${tasks.length + i + 1}: ${extraTasks[i][1]}\n`;
       }
     }
     response.send(message);
@@ -111,11 +126,11 @@ export const completeTask = onRequest(async (request, response) => {
   logger.log("body:", request.body);
   const userId = request.body.user_id;
   const taskNumber = parseInt(request.body.text || "");
-  if (isNaN(taskNumber)) {
+  if (isNaN(taskNumber) || taskNumber <= 0) {
     response.send(`Usage: /complete-task [task number]
 example: /complete-task 3`);
   } else {
-    const task = await Tasks.getTask(userId, taskNumber);
+    const task = await Tasks.getTask(userId, taskNumber - 1);
     if (!task) {
       response.send(`Task ${taskNumber} not found!`);
     } else {
@@ -138,7 +153,7 @@ export const todayTasks = onRequest(async (request, response) => {
     for (let i = 0; i < tasks.length; i++) {
       message += `${tasks[i][1]}\n`;
     }
-    response.send(message);
+    response.send({response_type: "in_channel", text: message});
   }
 });
 
@@ -146,11 +161,11 @@ export const moveToTasks = onRequest(async (request, response) => {
   logger.log("body:", request.body);
   const userId = request.body.user_id;
   const taskNumber = parseInt(request.body.text || "");
-  if (isNaN(taskNumber)) {
+  if (isNaN(taskNumber) || taskNumber <= 0) {
     response.send(`Usage: /move-to-tasks [task number]
 example: /move-to-tasks 3`);
   } else {
-    const task = await Tasks.getTask(userId, taskNumber);
+    const task = await Tasks.getTask(userId, taskNumber - 1);
     if (!task) {
       response.send(`Task ${taskNumber} not found!`);
     } else {
@@ -165,17 +180,36 @@ export const moveToExtra = onRequest(async (request, response) => {
   logger.log("body:", request.body);
   const userId = request.body.user_id;
   const taskNumber = parseInt(request.body.text || "");
-  if (isNaN(taskNumber)) {
+  if (isNaN(taskNumber) || taskNumber <= 0) {
     response.send(`Usage: /move-to-extra [task number]
 example: /move-to-extra 3`);
   } else {
-    const task = await Tasks.getTask(userId, taskNumber);
+    const task = await Tasks.getTask(userId, taskNumber - 1);
     if (!task) {
       response.send(`Task ${taskNumber} not found!`);
     } else {
       const [text, taskId] = task;
       await Tasks.changePriority(taskId, 1);
       response.send(`Task *${text}* moved to extra tasks`);
+    }
+  }
+});
+
+export const deleteTask = onRequest(async (request, response) => {
+  logger.log("body:", request.body);
+  const userId = request.body.user_id;
+  const taskNumber = parseInt(request.body.text || "");
+  if (isNaN(taskNumber) || taskNumber <= 0) {
+    response.send(`Usage: /delete-task [task number]
+  example: /delete-task 3`);
+  } else {
+    const task = await Tasks.getTask(userId, taskNumber - 1);
+    if (!task) {
+      response.send(`Task ${taskNumber} not found!`);
+    } else {
+      const [text, taskId] = task;
+      await Tasks.deleteTask(taskId);
+      response.send(`Task *${text}* deleted!`);
     }
   }
 });

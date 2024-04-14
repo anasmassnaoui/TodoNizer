@@ -85,7 +85,7 @@ const TaskDB = {
       .doc(teamId)
       .collection(CONSTANTS.TODO_COLLECTION)
       .doc(taskId)
-      .set({priority, creationDate: new Date()});
+      .update({priority, creationDate: new Date()});
   },
   deleteTask: async (teamId: string, taskId: string): Promise<void> => {
     await getFirestore()

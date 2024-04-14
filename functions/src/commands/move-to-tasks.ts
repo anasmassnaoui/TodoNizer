@@ -22,7 +22,7 @@ example: /move-to-tasks 3`);
       } else {
         await TaskDB.changeTaskPriority(teamId, task.id, 0);
         response.send(`The Task
-  ${Utils.quotesText(task.text)}
+${Utils.quotesText(task.text)}
 moved to tasks`);
       }
     }

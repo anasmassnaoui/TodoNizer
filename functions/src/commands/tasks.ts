@@ -26,10 +26,11 @@ const tasks = async (request: Request, response: Response) => {
           .join("\n");
       }
       if (extraTasks.length !== 0) {
-        message += tasks.length !== 0 ? "\n" : "";
+        const offset = tasks.length;
+        message += offset !== 0 ? "\n" : "";
         message += "*Here is your extra tasks list:*\n";
         message += extraTasks
-          .map((task, i) => Utils.quotesText(`${i + 1}: ${task}`))
+          .map((task, i) => Utils.quotesText(`${offset + i + 1}: ${task}`))
           .join("\n");
       }
       response.send(message);

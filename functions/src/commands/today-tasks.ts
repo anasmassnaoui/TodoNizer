@@ -15,10 +15,8 @@ const todayTasks = async (request: Request, response: Response) => {
     if (tasks.length === 0) {
       response.send(`Hi <@${userId}>, you don't have any tasks today`);
     } else {
-      let message = `Hi <@${userId}>, Here is your tasks for today:\n`;
-      for (let i = 0; i < tasks.length; i++) {
-        message += `${tasks[i][1]}\n`;
-      }
+      const message = `Hi <@${userId}>, Here is your tasks for today:\n` +
+        tasks.join("\n");
       response.send({response_type: "in_channel", text: message});
     }
   }
